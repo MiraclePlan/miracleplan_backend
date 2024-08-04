@@ -14,7 +14,6 @@ class Todo(Base):
     __tablename__ = "todos"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(150), unique=True, index=True)
-    description = Column(Text, nullable=False)
+    title = Column(Text, nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="todos")
