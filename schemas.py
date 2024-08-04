@@ -21,7 +21,6 @@ class User(UserBase):
 
 class TodoBase(BaseModel):
     title: str
-    description: str
 
 class TodoCreate(TodoBase):
     pass
