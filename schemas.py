@@ -1,5 +1,8 @@
 from pydantic import BaseModel
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
 class TokenRequest(BaseModel):
     username: str
     password: str
