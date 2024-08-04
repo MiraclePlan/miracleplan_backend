@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 models.Base.metadata.create_all(bind=engine)
+
 app = FastAPI()
 
 app.add_middleware(
@@ -20,7 +21,7 @@ app.add_middleware(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 @app.post("/token", response_model=dict)
-def login_for_access_token(token_request: schemas.TokenRequest, db: Session = Depends(get_db)):
+def access(token_request: schemas.TokenRequest, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == token_request.username).first()
     if not user or not auth.verify_password(token_request.password, user.hashed_password):
         raise HTTPException(
@@ -33,7 +34,7 @@ def login_for_access_token(token_request: schemas.TokenRequest, db: Session = De
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
 @app.post("/token/refresh", response_model=dict)
-def refresh_token(refresh_token_request: schemas.RefreshTokenRequest):
+def refresh(refresh_token_request: schemas.RefreshTokenRequest):
     user_info = auth.decode_refresh_token(refresh_token_request.refresh_token)
     if user_info is None:
         raise HTTPException(
@@ -44,7 +45,7 @@ def refresh_token(refresh_token_request: schemas.RefreshTokenRequest):
     access_token = auth.create_access_token(data={"sub": user_info["sub"]})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.post("/users", response_model=schemas.User)
+@app.post("/user", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     hashed_password = auth.get_password_hash(user.password)
     db_user = models.User(username=user.username, hashed_password=hashed_password)
@@ -53,7 +54,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(db_user)
     return db_user
 
-@app.post("/todos", response_model=schemas.Todo)
+@app.post("/todo", response_model=schemas.Todo)
 async def create_todo(
     todo: schemas.TodoCreate,
     db: Session = Depends(get_db),
@@ -69,7 +70,6 @@ async def create_todo(
     user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
     db_todo = models.Todo(
         title=todo.title,
-        description=todo.description,
         owner_id=user.id
     )
     db.add(db_todo)
@@ -77,7 +77,7 @@ async def create_todo(
     db.refresh(db_todo)
     return db_todo
 
-@app.delete("/todos/{todo_id}", response_model=schemas.Todo)
+@app.delete("/todo/{todo_id}", response_model=schemas.Todo)
 def delete_todo(todo_id: int, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     user_info = auth.decode_access_token(token)
     if user_info is None:
@@ -94,7 +94,7 @@ def delete_todo(todo_id: int, db: Session = Depends(get_db), token: str = Depend
     db.commit()
     return db_todo
 
-@app.get("/todos", response_model=List[schemas.Todo])
+@app.get("/todo", response_model=List[schemas.Todo])
 def read_todos(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     user_info = auth.decode_access_token(token)
     if user_info is None:
