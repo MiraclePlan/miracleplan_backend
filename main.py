@@ -29,15 +29,16 @@ def login_for_access_token(token_request: schemas.TokenRequest, db: Session = De
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = auth.create_access_token(data={"sub": user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    refresh_token = auth.create_refresh_token(data={"sub": user.username})
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
 @app.post("/token/refresh", response_model=dict)
-def refresh_token(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    user_info = auth.decode_access_token(token)
+def refresh_token(refresh_token_request: schemas.RefreshTokenRequest):
+    user_info = auth.decode_refresh_token(refresh_token_request.refresh_token)
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
+            detail="Invalid refresh token",
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = auth.create_access_token(data={"sub": user_info["sub"]})
