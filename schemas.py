@@ -1,5 +1,18 @@
 from pydantic import BaseModel
 from datetime import date
+from typing import List
+
+class UserBase(BaseModel):
+    username: str
+
+class UserCreate(UserBase):
+    password: str
+
+class User(UserBase):
+    id: int
+
+    class Config:
+        orm_mode = True
 
 class TodoBase(BaseModel):
     title: str
@@ -20,14 +33,15 @@ class Todo(TodoBase):
     class Config:
         orm_mode = True
 
-class UserBase(BaseModel):
-    username: str
+class GroupBase(BaseModel):
+    name: str
 
-class UserCreate(UserBase):
-    password: str
+class GroupCreate(GroupBase):
+    pass
 
-class User(UserBase):
+class Group(GroupBase):
     id: int
+    members: List[User] = []
 
     class Config:
         orm_mode = True
