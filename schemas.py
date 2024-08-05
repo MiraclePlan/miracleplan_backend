@@ -1,11 +1,24 @@
 from pydantic import BaseModel
+from datetime import date
 
-class RefreshTokenRequest(BaseModel):
-    refresh_token: str
+class TodoBase(BaseModel):
+    title: str
+    start_date: date
+    end_date: date
+    completed: bool = False
 
-class TokenRequest(BaseModel):
-    username: str
-    password: str
+class TodoCreate(TodoBase):
+    pass
+
+class TodoUpdate(TodoBase):
+    completed: bool
+
+class Todo(TodoBase):
+    id: int
+    owner_id: int
+
+    class Config:
+        orm_mode = True
 
 class UserBase(BaseModel):
     username: str
@@ -19,15 +32,9 @@ class User(UserBase):
     class Config:
         orm_mode = True
 
-class TodoBase(BaseModel):
-    title: str
+class TokenRequest(BaseModel):
+    username: str
+    password: str
 
-class TodoCreate(TodoBase):
-    pass
-
-class Todo(TodoBase):
-    id: int
-    owner_id: int
-
-    class Config:
-        orm_mode = True
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
