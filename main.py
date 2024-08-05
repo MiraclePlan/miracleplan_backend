@@ -1,3 +1,6 @@
+from datetime import date
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI, Depends, HTTPException, status
 import models, schemas, auth
 from database import engine, get_db
@@ -19,6 +22,30 @@ app.add_middleware(
 )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+@app.on_event("startup")
+async def startup_event():
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(reset_todos, CronTrigger(hour=0, minute=0))
+    scheduler.add_job(delete_expired_todos, CronTrigger(hour=0, minute=0))
+    scheduler.start()
+
+async def reset_todos():
+    db = next(get_db())
+    todos = db.query(models.Todo).all()
+    for todo in todos:
+        todo.completed = False
+    db.commit()
+    db.close()
+
+async def delete_expired_todos():
+    db = next(get_db())
+    today = date.today()
+    expired_todos = db.query(models.Todo).filter(models.Todo.end_date < today).all()
+    for todo in expired_todos:
+        db.delete(todo)
+    db.commit()
+    db.close()
 
 @app.post("/token", response_model=dict)
 def access(token_request: schemas.TokenRequest, db: Session = Depends(get_db)):
@@ -70,28 +97,13 @@ async def create_todo(
     user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
     db_todo = models.Todo(
         title=todo.title,
+        start_date=todo.start_date,
+        end_date=todo.end_date,
         owner_id=user.id
     )
     db.add(db_todo)
     db.commit()
     db.refresh(db_todo)
-    return db_todo
-
-@app.delete("/todo/{todo_id}", response_model=schemas.Todo)
-def delete_todo(todo_id: int, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    user_info = auth.decode_access_token(token)
-    if user_info is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
-    db_todo = db.query(models.Todo).filter(models.Todo.id == todo_id, models.Todo.owner_id == user.id).first()
-    if db_todo is None:
-        raise HTTPException(status_code=404, detail="Todo not found")
-    db.delete(db_todo)
-    db.commit()
     return db_todo
 
 @app.get("/todo", response_model=List[schemas.Todo])
@@ -110,3 +122,20 @@ def read_todos(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme
 
     todos = db.query(models.Todo).filter(models.Todo.owner_id == user.id).all()
     return todos
+
+@app.get("/todo/completed", response_model=List[schemas.Todo])
+def read_completed_todos(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    user_info = auth.decode_access_token(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    completed_todos = db.query(models.Todo).filter(models.Todo.owner_id == user.id, models.Todo.completed == True).all()
+    return completed_todos
