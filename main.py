@@ -139,3 +139,96 @@ def read_completed_todos(db: Session = Depends(get_db), token: str = Depends(oau
 
     completed_todos = db.query(models.Todo).filter(models.Todo.owner_id == user.id, models.Todo.completed == True).all()
     return completed_todos
+
+@app.post("/group", response_model=schemas.Group)
+def create_group(group: schemas.GroupCreate, db: Session = Depends(get_db)):
+    db_group = models.Group(name=group.name)
+    db.add(db_group)
+    db.commit()
+    db.refresh(db_group)
+    return db_group
+
+@app.delete("/group/{group_id}", response_model=schemas.Group)
+def delete_group(group_id: int, db: Session = Depends(get_db)):
+    db_group = db.query(models.Group).filter(models.Group.id == group_id).first()
+    if db_group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+    db.delete(db_group)
+    db.commit()
+    return db_group
+
+@app.post("/group/{group_id}/join", response_model=schemas.Group)
+def join_group(group_id: int, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    user_info = auth.decode_access_token(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
+    db_group = db.query(models.Group).filter(models.Group.id == group_id).first()
+    if db_group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+    db_group.members.append(user)
+    db.commit()
+    db.refresh(db_group)
+    return db_group
+
+@app.post("/group/{group_id}/leave", response_model=schemas.Group)
+def leave_group(group_id: int, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    user_info = auth.decode_access_token(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
+    db_group = db.query(models.Group).filter(models.Group.id == group_id).first()
+    if db_group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+    db_group.members.remove(user)
+    db.commit()
+    db.refresh(db_group)
+    return db_group
+
+@app.get("/group/joined", response_model=List[schemas.Group])
+def get_joined(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    user_info = auth.decode_access_token(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
+    return user.groups
+
+@app.get("/group/not-joined", response_model=List[schemas.Group])
+def get_not_joined(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    user_info = auth.decode_access_token(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
+    joined_groups = [group.id for group in user.groups]
+    not_joined_groups = db.query(models.Group).filter(models.Group.id.notin_(joined_groups)).all()
+    return not_joined_groups
+
+@app.get("/group/{group_id}/members", response_model=List[schemas.User])
+def get_group_members(group_id: int, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    user_info = auth.decode_access_token(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    db_group = db.query(models.Group).filter(models.Group.id == group_id).first()
+    if db_group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+    return db_group.members
