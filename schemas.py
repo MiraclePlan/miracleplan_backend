@@ -1,6 +1,6 @@
 from pydantic import BaseModel
+from typing import List, Optional
 from datetime import date
-from typing import List
 
 class UserBase(BaseModel):
     username: str
@@ -14,21 +14,25 @@ class User(UserBase):
     class Config:
         orm_mode = True
 
+class TokenRequest(BaseModel):
+    username: str
+    password: str
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
 class TodoBase(BaseModel):
     title: str
     start_date: date
     end_date: date
-    completed: bool = False
 
 class TodoCreate(TodoBase):
     pass
 
-class TodoUpdate(TodoBase):
-    completed: bool
-
 class Todo(TodoBase):
     id: int
     owner_id: int
+    completed: bool
 
     class Config:
         orm_mode = True
@@ -41,14 +45,8 @@ class GroupCreate(GroupBase):
 
 class Group(GroupBase):
     id: int
+    creator_id: int
     members: List[User] = []
 
     class Config:
         orm_mode = True
-
-class TokenRequest(BaseModel):
-    username: str
-    password: str
-
-class RefreshTokenRequest(BaseModel):
-    refresh_token: str
