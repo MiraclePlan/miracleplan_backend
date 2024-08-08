@@ -4,26 +4,25 @@ services:
   mysql:
     image: mysql:latest
     container_name: mysql-container
+    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: Blue3570!!
       MYSQL_DATABASE: miracleplan
-    ports:
-      - "3306:3306"
-    networks:
-      - my-network
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - miracleplan:/var/lib/mysql
 
   fastapi:
     image: miracleplan
     container_name: fastapi-container
+    restart: always
     environment:
-      DATABASE_URL: mysql+mysqlconnector://paul3083:Blue3570!!@mysql-container:3306/miracleplan
+      DATABASE_URL: mysql+mysqlconnector://root:Blue3570!!@mysql:3306/miracleplan
     ports:
       - "8000:8000"
     depends_on:
       - mysql
-    networks:
-      - my-network
-
-networks:
-  my-network:
-    driver: bridge
+volumes:
+    miracleplan:
