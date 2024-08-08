@@ -91,7 +91,7 @@ async def create_todo(
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
+            detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
     user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
@@ -115,11 +115,9 @@ def read_todos(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
     user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
     todos = db.query(models.Todo).filter(models.Todo.owner_id == user.id).all()
     return todos
 
@@ -132,27 +130,48 @@ def read_completed_todos(db: Session = Depends(get_db), token: str = Depends(oau
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
     user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
     completed_todos = db.query(models.Todo).filter(models.Todo.owner_id == user.id, models.Todo.completed == True).all()
     return completed_todos
 
 @app.post("/group", response_model=schemas.Group)
-def create_group(group: schemas.GroupCreate, db: Session = Depends(get_db)):
-    db_group = models.Group(name=group.name)
+def create_group(group: schemas.GroupCreate, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    user_info = auth.decode_access_token(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    db_group = models.Group(name=group.name, creator_id=user.id)
+    db_group.members.append(user)
     db.add(db_group)
     db.commit()
     db.refresh(db_group)
     return db_group
 
 @app.delete("/group/{group_id}", response_model=schemas.Group)
-def delete_group(group_id: int, db: Session = Depends(get_db)):
+def delete_group(group_id: int, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    user_info = auth.decode_access_token(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
     db_group = db.query(models.Group).filter(models.Group.id == group_id).first()
     if db_group is None:
         raise HTTPException(status_code=404, detail="Group not found")
+    if db_group.creator_id != user.id:
+        raise HTTPException(status_code=403, detail="You do not have permission to delete this group")
     db.delete(db_group)
     db.commit()
     return db_group
@@ -203,6 +222,8 @@ def get_joined(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme
             headers={"WWW-Authenticate": "Bearer"},
         )
     user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
     return user.groups
 
 @app.get("/group/not-joined", response_model=List[schemas.Group])
@@ -215,6 +236,8 @@ def get_not_joined(db: Session = Depends(get_db), token: str = Depends(oauth2_sc
             headers={"WWW-Authenticate": "Bearer"},
         )
     user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
     joined_groups = [group.id for group in user.groups]
     not_joined_groups = db.query(models.Group).filter(models.Group.id.notin_(joined_groups)).all()
     return not_joined_groups
@@ -228,6 +251,9 @@ def get_group_members(group_id: int, db: Session = Depends(get_db), token: str =
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
     db_group = db.query(models.Group).filter(models.Group.id == group_id).first()
     if db_group is None:
         raise HTTPException(status_code=404, detail="Group not found")
