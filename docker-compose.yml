@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:latest
+    container_name: mysql-container
+    environment:
+      MYSQL_ROOT_PASSWORD: Blue3570!!
+      MYSQL_DATABASE: miracleplan
+    ports:
+      - "3306:3306"
+    networks:
+      - my-network
+
+  fastapi:
+    image: miracleplan
+    container_name: fastapi-container
+    environment:
+      DATABASE_URL: mysql+mysqlconnector://paul3083:Blue3570!!@mysql-container:3306/miracleplan
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mysql
+    networks:
+      - my-network
+
+networks:
+  my-network:
+    driver: bridge

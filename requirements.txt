@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+sqlalchemy
+alembic
+apscheduler
+mysql-connector-python
+passlib
+pydantic
+python-jose
