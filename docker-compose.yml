@@ -15,7 +15,7 @@ services:
       - miracleplan:/var/lib/mysql
 
   fastapi:
-    image: miracleplan
+    image: paul3083/miracleplan
     container_name: fastapi-container
     restart: always
     environment:
