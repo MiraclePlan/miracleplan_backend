@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, Date, Boolean
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -14,7 +14,21 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(255), unique=True, index=True)
     hashed_password = Column(String(255))
+    profile = Column(String(255))
+    todos = relationship("Todo", back_populates="creator")
     groups = relationship("Group", secondary=group_membership, back_populates="members")
+
+
+class Todo(Base):
+    __tablename__ = 'todos'
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255))
+    start_date = Column(Date)
+    end_date = Column(Date)
+    completed = Column(Boolean, default=False)
+    creator_id = Column(Integer, ForeignKey('users.id'))
+    creator = relationship("User", back_populates="todos")
 
 
 class Group(Base):
