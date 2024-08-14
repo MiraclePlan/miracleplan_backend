@@ -53,6 +53,6 @@ jobs:
             password: ${{ secrets.REMOTE_SSH_PASSWORD }}
             port: ${{ secrets.REMOTE_SSH_PORT }}
             script: |
-              docker pull ${{ secrets.DOCKER_USERNAME }}:miracleplan
+              docker pull ${{ secrets.DOCKER_USERNAME }}/miracleplan
               cd miracleplan
               docker compose up -d
