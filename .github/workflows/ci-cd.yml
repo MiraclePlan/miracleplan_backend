@@ -49,4 +49,4 @@ jobs:
 
       - name: Deploy to server
         run: |
-          docker run -d -p 80:80 paul3083/miracleplan:latest"
+          docker run -d -p 80:80 paul3083/miracleplan:latest
