@@ -417,4 +417,24 @@ async def update_profile(file: UploadFile = File(...), db: Session = Depends(get
     return {"filename": file.filename, "file_path": file_path}
 
 
+@app.delete("/profile", response_model=dict)
+async def delete_profile(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    user_info = auth.decode_access_token(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
+    user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.profile and os.path.exists(user.profile):
+        os.remove(user.profile)
+
+    user.profile = None
+    db.commit()
+
+    return {"filename": user.profile, "file_path": user.profile}
