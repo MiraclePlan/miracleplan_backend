@@ -49,4 +49,4 @@ jobs:
 
       - name: Deploy to server
         run: |
-          ssh paul3083@jeongwoo-babo.doyun.dev "docker pull paul3083/miracleplan:latest && docker run -d -p 80:80 paul3083/miracleplan:latest"
+          docker run -d -p 80:80 paul3083/miracleplan:latest"
