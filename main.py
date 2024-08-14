@@ -86,7 +86,7 @@ def refresh(refresh_token_request: schemas.RefreshTokenRequest):
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = auth.create_access_token(data={"sub": user_info["sub"]})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token}
 
 
 @app.post("/user", response_model=schemas.User)
