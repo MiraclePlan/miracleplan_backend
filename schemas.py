@@ -9,12 +9,12 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    profile: Optional[str] = None
+    # profile: Optional[str] = None
 
 
 class User(UserBase):
     id: int
-    profile: Optional[str] = None
+    # profile: Optional[str] = None
 
     class Config:
         orm_mode = True

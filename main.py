@@ -338,103 +338,103 @@ def get_calendar_status(db: Session = Depends(get_db), token: str = Depends(oaut
     return calendar_status
 
 
-@app.post("/profile", response_model=dict)
-async def upload_profile(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme),
-                         file: UploadFile = File(...)):
-    user_info = auth.decode_access_token(token)
-    if user_info is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if not file.filename.endswith((".jpg", ".jpeg", ".png")):
-        raise HTTPException(
-            status_code=400, detail="Invalid file type"
-        )
-
-    file_path = os.path.join(UPLOAD_DIRECTORY, f"{file.filename}")
-
-    with open(file_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
-    user.profile = file_path
-    db.commit()
-
-    return {"filename": file.filename, "file_path": file_path}
-
-
-@app.get("/profile", response_model=schemas.User)
-async def get_profile(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    user_info = auth.decode_access_token(token)
-    if user_info is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if not user.profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-
-    return FileResponse(user.profile)
-
-
-@app.put("/profile", response_model=dict)
-async def update_profile(file: UploadFile = File(...), db: Session = Depends(get_db),
-                         token: str = Depends(oauth2_scheme)):
-    user_info = auth.decode_access_token(token)
-    if user_info is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if user.profile and os.path.exists(user.profile):
-        os.remove(user.profile)
-
-    file_path = os.path.join(UPLOAD_DIRECTORY, f"{file.filename}")
-    with open(file_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
-    user.profile = file_path
-    db.commit()
-
-    return {"filename": file.filename, "file_path": file_path}
-
-
-@app.delete("/profile", response_model=dict)
-async def delete_profile(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    user_info = auth.decode_access_token(token)
-    if user_info is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if user.profile and os.path.exists(user.profile):
-        os.remove(user.profile)
-
-    user.profile = None
-    db.commit()
-
-    return {"filename": user.profile, "file_path": user.profile}
+# @app.post("/profile", response_model=dict)
+# async def upload_profile(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme),
+#                          file: UploadFile = File(...)):
+#     user_info = auth.decode_access_token(token)
+#     if user_info is None:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Invalid authentication credentials",
+#             headers={"WWW-Authenticate": "Bearer"},
+#         )
+#
+#     user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
+#     if user is None:
+#         raise HTTPException(status_code=404, detail="User not found")
+#
+#     if not file.filename.endswith((".jpg", ".jpeg", ".png")):
+#         raise HTTPException(
+#             status_code=400, detail="Invalid file type"
+#         )
+#
+#     file_path = os.path.join(UPLOAD_DIRECTORY, f"{file.filename}")
+#
+#     with open(file_path, "wb") as f:
+#         shutil.copyfileobj(file.file, f)
+#
+#     user.profile = file_path
+#     db.commit()
+#
+#     return {"filename": file.filename, "file_path": file_path}
+#
+#
+# @app.get("/profile", response_model=schemas.User)
+# async def get_profile(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+#     user_info = auth.decode_access_token(token)
+#     if user_info is None:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Invalid authentication credentials",
+#             headers={"WWW-Authenticate": "Bearer"},
+#         )
+#
+#     user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
+#
+#     if not user.profile:
+#         raise HTTPException(status_code=404, detail="Profile not found")
+#
+#     return FileResponse(user.profile)
+#
+#
+# @app.put("/profile", response_model=dict)
+# async def update_profile(file: UploadFile = File(...), db: Session = Depends(get_db),
+#                          token: str = Depends(oauth2_scheme)):
+#     user_info = auth.decode_access_token(token)
+#     if user_info is None:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Invalid authentication credentials",
+#             headers={"WWW-Authenticate": "Bearer"},
+#         )
+#
+#     user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
+#
+#     if user.profile and os.path.exists(user.profile):
+#         os.remove(user.profile)
+#
+#     file_path = os.path.join(UPLOAD_DIRECTORY, f"{file.filename}")
+#     with open(file_path, "wb") as f:
+#         shutil.copyfileobj(file.file, f)
+#
+#     user.profile = file_path
+#     db.commit()
+#
+#     return {"filename": file.filename, "file_path": file_path}
+#
+#
+# @app.delete("/profile", response_model=dict)
+# async def delete_profile(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+#     user_info = auth.decode_access_token(token)
+#     if user_info is None:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Invalid authentication credentials",
+#             headers={"WWW-Authenticate": "Bearer"},
+#         )
+#
+#     user = db.query(models.User).filter(models.User.username == user_info["sub"]).first()
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
+#
+#     if user.profile and os.path.exists(user.profile):
+#         os.remove(user.profile)
+#
+#     user.profile = None
+#     db.commit()
+#
+#     return {"filename": user.profile, "file_path": user.profile}

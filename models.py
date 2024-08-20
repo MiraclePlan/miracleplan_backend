@@ -14,7 +14,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(255), unique=True, index=True)
     hashed_password = Column(String(255))
-    profile = Column(String(255))
+    # profile = Column(String(255))
     todos = relationship("Todo", back_populates="creator")
     groups = relationship("Group", secondary=group_membership, back_populates="members")
 
